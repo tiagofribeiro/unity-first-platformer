@@ -58,3 +58,6 @@ sysinfo.txt
 # Crashlytics generated file
 crashlytics-build.properties
 
+# Tile assets
+/Assets/Pixel Adventure 1/Assets/Terrain/Tiles/
+/Assets/Pixel Adventure 1/Assets/Background/Tiles/
