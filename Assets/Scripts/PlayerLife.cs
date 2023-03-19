@@ -3,33 +3,43 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-public class PlayerLife : MonoBehaviour
+namespace PlayerScripts
 {
-    private Rigidbody2D rb;
-    private Animator animator;
-
-    void Start()
+    public class PlayerLife : MonoBehaviour
     {
-        rb = GetComponent<Rigidbody2D>();
-        animator = GetComponent<Animator>();
-    }
+        private Rigidbody2D rb;
+        private Animator animator;
+        private PlayerMovement pm;
+        private SpriteRenderer sr;
 
-    private void OnCollisionEnter2D(Collision2D collision)
-    {
-        if (collision.gameObject.CompareTag("Trap"))
+        void Start()
         {
-            Die();
+            rb = GetComponent<Rigidbody2D>();
+            animator = GetComponent<Animator>();
+            pm = GetComponent<PlayerMovement>();
+            sr = GetComponent<SpriteRenderer>();
         }
-    }
 
-    private void Die()
-    {
-        rb.bodyType = RigidbodyType2D.Static;
-        animator.SetTrigger("death");
-    }
+        private void OnCollisionEnter2D(Collision2D collision)
+        {
+            if (collision.gameObject.CompareTag("Trap"))
+            {
+                pm.CanMove = false;
+                sr.sortingLayerName = "Front";
+                Die();
+            }
+        }
 
-    private void RestartLevel()
-    {
-        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+        private void Die()
+        {
+            rb.velocity = new Vector3(-5, 14f, 0);
+            GetComponent<Collider2D>().enabled = false;
+            animator.SetTrigger("death");
+        }
+
+        private void RestartLevel()
+        {
+            SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+        }
     }
 }

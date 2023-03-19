@@ -7,88 +7,213 @@ using UnityEngine;
 /// This is the script responsible for player movement.
 /// Comments will be left in for future studies.
 /// </summary>
-public class PlayerMovement : MonoBehaviour
+namespace PlayerScripts
 {
-    private Rigidbody2D rb;
-    private BoxCollider2D bc;
-    private Animator animator;
-    private SpriteRenderer sr;
-
-    [SerializeField] private LayerMask jumpableGround;
-
-    private float dirX;
-    [SerializeField] private float moveSpeed = 7f;
-    [SerializeField] private float jumpForce = 14f;
-
-    private enum MovementState { idle, running, jumping, falling }
-    //private MovementState state;
-
-
-    // Start is called before the first frame update
-    private void Start()
+    public class PlayerMovement : MonoBehaviour
     {
-        Debug.Log("Hello World!");
 
-        rb = GetComponent<Rigidbody2D>();
-        bc = GetComponent<BoxCollider2D>(); 
-        sr = GetComponent<SpriteRenderer>();
-        animator = GetComponent<Animator>();
-    }
+        #region COMPONENTS
+        public Rigidbody2D PlayerRigidB { get; private set; }
+        public BoxCollider2D PlayerBoxC { get; private set; }
+        public Animator PlayerAnimator { get; private set; }
+        public SpriteRenderer PlayerSpriteR { get; private set; }
+        #endregion
 
-    // Update is called once per frame
-    private void Update()
-    {
-        // To get any key from the keyboard use GetKey(KeyCode)
-        // Reference: https://docs.unity3d.com/ScriptReference/KeyCode.html
+        #region LAYERS & TAGS
+        [SerializeField] private LayerMask groundLayer;
+        #endregion
 
+        #region INPUT PARAMETERS
+        /// <summary>
+        /// Vectorizes player horizontal input
+        /// <list type="table">
+        /// <item>-1 (left)</item>
+        /// <item>0 (still)</item>
+        /// <item>1 (right)</item>
+        /// </list>
+        /// </summary>
+        private Vector2 moveInput;
+        #endregion
 
-        // To get "precise" movements use GetAxisRaw("Axis")
-        dirX = Input.GetAxis("Horizontal");
-        rb.velocity = new Vector2(dirX * moveSpeed, rb.velocity.y);
+        #region STATE PARAMETERS
+        // Variables control the various actions the player can perform at any time.
+        public bool IsFacingRight { get; private set; }
+        public bool CanMove { get; set; }
 
+        /// <summary>
+        /// Enumerator for Animator var <i>"state"</i>
+        /// <list type="table">
+        /// <item>0 - idle</item>
+        /// <item>1 - running</item>
+        /// <item>2 - jumping</item>
+        /// <item>3 - falling</item>
+        /// </list>
+        /// </summary>
+        private enum MovementState { idle, running, jumping, falling }
+        #endregion
 
-        if (Input.GetButton("Jump") && IsGrounded())
+        #region CHECK PARAMETERS
+        [Header("Movement")]
+        [SerializeField] private float maxSpeed = 20f;
+        [SerializeField] private float jumpForce = 16f;
+        [SerializeField] private float acceleration = 10f;
+        [SerializeField] private float deacceleration = 10f;
+        [SerializeField] private float currentSpeed = 0f;
+        #endregion
+
+        // #1
+        private void Awake()
         {
-            rb.velocity = new Vector3(rb.velocity.x, jumpForce, 0);
+            PlayerRigidB = GetComponent<Rigidbody2D>();
+            PlayerBoxC = GetComponent<BoxCollider2D>();
+            PlayerSpriteR = GetComponent<SpriteRenderer>();
+            PlayerAnimator = GetComponent<Animator>();
         }
 
-        UpdateAnimation(dirX);
-    }
-
-    private void UpdateAnimation(float dirX)
-    {
-        MovementState state; 
-
-        switch (dirX)
+        // #2
+        private void Start()
         {
-            case > 0:
-                state = MovementState.running;
-                sr.flipX = false;
-                break;
-            case < 0:
-                state = MovementState.running;
-                sr.flipX = true;
-                break;
-            default:
-                state = MovementState.idle;
-                break;
+            //Debug.Log("Hello World!");
+            IsFacingRight = true;
+            CanMove = true;
         }
 
-        switch (rb.velocity.y)
+        // #3 (once per frame)
+        private void Update()
         {
-            case > .1f:
-                state = MovementState.jumping;
-                break;
-            case < -.1f:
-                state = MovementState.falling;
-                break;
+            #region INPUT HANDLER
+            // To get any key from the keyboard use GetKey(KeyCode)
+            // Reference: https://docs.unity3d.com/ScriptReference/KeyCode.html
+
+            if (CanMove)
+            {
+                moveInput.x = Input.GetAxis("Horizontal");
+
+                if (moveInput.x != 0)
+                {
+                    CheckDirectionToFace(moveInput.x > 0);
+                }
+
+                if (Input.GetButton("Jump") && IsGrounded())
+                    PlayerRigidB.velocity = new Vector3(PlayerRigidB.velocity.x, jumpForce, 0);
+
+                UpdateAnimation(moveInput.x);
+            }
+            #endregion
         }
 
-        animator.SetInteger("state", (int)state);
-    }
+        private void FixedUpdate()
+        {
+            if (CanMove)
+                Run();
+        }
 
-    private bool IsGrounded()
-    {
-        return Physics2D.BoxCast(bc.bounds.center, bc.bounds.size, 0f, Vector2.down, .1f, jumpableGround);
+        #region MOVEMENT METHODS
+
+        private void Run()
+        {
+            //maxSpeed 20
+            //jumpForce 20
+            //acceleration 10
+            //deacceleration 10
+            //currentSpeed 0
+
+            if (moveInput.x > 0)
+            {
+                if (currentSpeed >= 0 && currentSpeed < maxSpeed)
+                {
+                    currentSpeed += acceleration * moveInput.x;
+                    PlayerRigidB.AddForce(new Vector2(currentSpeed, PlayerRigidB.velocity.y));
+                    currentSpeed = PlayerRigidB.velocity.x;
+                }
+                else if (currentSpeed < 0)
+                {
+                    currentSpeed -= deacceleration;
+                    PlayerRigidB.AddForce(new Vector2(currentSpeed, PlayerRigidB.velocity.y));
+                    currentSpeed = PlayerRigidB.velocity.x;
+                }
+            }
+            else if (moveInput.x < 0)
+            {
+                if (currentSpeed <= 0 && currentSpeed > -maxSpeed)
+                {
+                    currentSpeed += acceleration * moveInput.x;
+                    PlayerRigidB.AddForce(new Vector2(currentSpeed, PlayerRigidB.velocity.y));
+                    currentSpeed = PlayerRigidB.velocity.x;
+                }
+                else if (currentSpeed > 0)
+                {
+                    currentSpeed += deacceleration;
+                    PlayerRigidB.AddForce(new Vector2(currentSpeed, PlayerRigidB.velocity.y));
+                    currentSpeed = PlayerRigidB.velocity.x;
+                }
+            }
+
+
+
+
+            //switch (Mathf.Abs(moveInput.x))
+            //{
+            //    case > 0:
+            //        currentSpeed += acceleration * Time.deltaTime;
+            //        break;
+            //    default:
+            //        currentSpeed -= deacceleration * Time.deltaTime;
+            //        break;
+            //}
+
+            //currentSpeed = Mathf.Clamp(currentSpeed, 0, maxSpeed);
+
+            //PlayerRigidB.AddForce(new Vector2(moveInput.x * currentSpeed, PlayerRigidB.velocity.y));
+
+            ////PlayerRigidB.velocity = new Vector2(moveInput.x * currentSpeed, PlayerRigidB.velocity.y);
+
+        }
+        #endregion
+
+        #region ANIMATION METHODS
+        private void UpdateAnimation(float moveInput)
+        {
+            MovementState state;
+
+            switch (moveInput)
+            {
+                case > 0:
+                    state = MovementState.running;
+                    break;
+                case < 0:
+                    state = MovementState.running;
+                    break;
+                default:
+                    state = MovementState.idle;
+                    break;
+            }
+
+            switch (PlayerRigidB.velocity.y)
+            {
+                case > .1f:
+                    state = MovementState.jumping;
+                    break;
+                case < -.1f:
+                    state = MovementState.falling;
+                    break;
+            }
+
+            PlayerAnimator.SetInteger("state", (int)state);
+        }
+        #endregion
+
+
+        #region CHECK METHODS
+        public void CheckDirectionToFace(bool isMovingRight)
+        {
+            _ = isMovingRight != IsFacingRight ? PlayerSpriteR.flipX = true : PlayerSpriteR.flipX = false;
+        }
+
+        private bool IsGrounded()
+        {
+            return Physics2D.BoxCast(PlayerBoxC.bounds.center, PlayerBoxC.bounds.size, 0f, Vector2.down, .1f, groundLayer);
+        }
+        #endregion
     }
 }

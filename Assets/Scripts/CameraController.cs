@@ -1,13 +1,15 @@
+using PlayerScripts;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
 public class CameraController : MonoBehaviour
 {
-    [SerializeField] private Transform player;
+    [SerializeField] private MonoBehaviour player;
 
     private void Update()
     {
-        transform.position = new Vector3(player.position.x, player.position.y + 2, transform.position.z);
+        if (player.GetComponent<PlayerMovement>().CanMove)
+            transform.position = new Vector3(player.transform.position.x, player.transform.position.y, transform.position.z);
     }
 }

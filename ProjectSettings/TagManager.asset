@@ -46,6 +46,9 @@ TagManager:
   - name: Background
     uniqueID: 1401978055
     locked: 0
+  - name: Decoration
+    uniqueID: 419307691
+    locked: 0
   - name: Items
     uniqueID: 637643303
     locked: 0
@@ -54,4 +57,7 @@ TagManager:
     locked: 0
   - name: Terrain
     uniqueID: 4038671989
+    locked: 0
+  - name: Front
+    uniqueID: 3715035875
     locked: 0
